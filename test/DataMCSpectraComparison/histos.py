@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-miniAOD = False
+
+miniAOD = True
 
 import sys, os, FWCore.ParameterSet.Config as cms
 from SUSYBSMAnalysis.Zprime2muAnalysis.Zprime2muAnalysis_cff import switch_hlt_process_name
@@ -9,15 +10,14 @@ from SUSYBSMAnalysis.Zprime2muAnalysis.Zprime2muAnalysis_cff import goodDataFilt
 
 
 
-
 process.source.fileNames =[#'file:PAT_SingleMuRun2015B-Rereco-Suite_251162_251559_20160120153115/crab_SingleMuRun2015B-Rereco-Suite_251162_251559_20160120153115/results/Zprime_123.root',
                            #'/store/data/Run2016G/SingleMuon/MINIAOD/PromptReco-v1/000/278/819/00000/68409ABF-A263-E611-A259-FA163E2F90EB.root',
 			   #'/store/data/Run2016F/SingleMuon/MINIAOD/PromptReco-v1/000/277/932/00000/084865EB-1859-E611-BDA7-02163E011A89.root',
 			   #'file:/afs/cern.ch/work/j/jschulte/ZPrime/tuple/DYinclsuive_pat.root',
-			   #'/store/mc/RunIISpring16MiniAODv2/WWTo2L2Nu_13TeV-powheg/MINIAODSIM/PUSpring16_80X_mcRun2_asymptotic_2016_miniAODv2_v0-v1/00000/00B02413-021A-E611-9326-001EC9ADCC80.root',
-			   ' /store/user/alfloren/PAATuples/WWTo2L2Nu_13TeV-powheg/datamc_WWinclusive/160524_124813/0000/pat_1.root',
+			   '/store/mc/RunIISpring16MiniAODv2/WWTo2L2Nu_13TeV-powheg/MINIAODSIM/PUSpring16_80X_mcRun2_asymptotic_2016_miniAODv2_v0-v1/00000/00B02413-021A-E611-9326-001EC9ADCC80.root',
+			  # ' /store/user/alfloren/PAATuples/WWTo2L2Nu_13TeV-powheg/datamc_WWinclusive/160524_124813/0000/pat_1.root',
                            ]
-process.maxEvents.input = 50
+process.maxEvents.input =-1
 #process.GlobalTag.globaltag = '76X_dataRun2_v15'## solo per proare i dati
 process.GlobalTag.globaltag = '80X_dataRun2_Prompt_v11'
 #process.options.wantSummary = cms.untracked.bool(True)# false di default
@@ -86,7 +86,7 @@ cuts = {
     'Simple'   : OurSelectionDec2012, # The selection cuts in the module listed here are ignored below.
 #    'VBTFMuPrescaled' : VBTFSelection,
     #'OurMuPrescaledNew'  : OurSelectionNew,
-   #'OurMuPrescaled2012' : OurSelectionDec2012
+   'OurMuPrescaled2012' : OurSelectionDec2012
     }
 
 # Loop over all the cut sets defined and make the lepton, allDilepton
@@ -181,30 +181,28 @@ for cut_name, Selection in cuts.iteritems():
         path_list.append(alldil * dil * histos)
 
 
-      #define the list of MC samples to be read here
+       #define the list of MC samples to be read here. Be careful that if WWinclusive or tautau sample are not commented it will apply the filters when running locally. 
 
     samples = [
                #('dy200to400','/ZToMuMu_NNPDF30_13TeV-powheg_M_200_400/RunIISpring16MiniAODv2-PUSpring16_80X_mcRun2_asymptotic_2016_miniAODv2_v0-v1/MINIAODSIM'),
 	       #('dy200to400','/ZToMuMu_NNPDF30_13TeV-powheg_M_200_400/rradogna-datamc_dy200to400-20330eea4b39a6d27baf680b4cd56b47/USER'),
                #  ('dy200to400','/ZToMuMu_NNPDF30_13TeV-powheg_M_200_400/RunIISpring16MiniAODv2-PUSpring16RAWAODSIM_reHLT_80X_mcRun2_asymptotic_v14-v1/MINIAODSIM'),
 	       # ('dy50to120','/ZToMuMu_NNPDF30_13TeV-powheg_M_50_120/RunIISpring16MiniAODv2-PUSpring16RAWAODSIM_reHLT_80X_mcRun2_asymptotic_v14-v1/MINIAODSIM'),
-	         ('WWinclusive','/WWTo2L2Nu_13TeV-powheg/RunIISpring16MiniAODv2-PUSpring16_80X_mcRun2_asymptotic_2016_miniAODv2_v0-v1/MINIAODSIM'),
+	       #  ('WWinclusive','/WWTo2L2Nu_13TeV-powheg/RunIISpring16MiniAODv2-PUSpring16_80X_mcRun2_asymptotic_2016_miniAODv2_v0-v1/MINIAODSIM'),
 		
         ]
-		    
+
+
+
+	
+
     # Finally, make the path for this set of cuts.
     pathname = 'path' + cut_name
     if miniAOD:
     	pobj = process.muonPhotonMatchMiniAOD * reduce(lambda x,y: x*y, path_list)
     else:
     	pobj = process.muonPhotonMatch * reduce(lambda x,y: x*y, path_list)
-    #if 'VBTF' not in cut_name and cut_name != 'Simple':
-    if 'VBTF' not in cut_name:
-        if not miniAOD:
-		pobj = process.goodDataFilter * pobj
-	else:
-		for dataFilter in goodDataFiltersMiniAOD: 
-			pobj = dataFilter * pobj
+
 
     for name, ana_dataset in samples:
 	    if 'WWinclusive' in name:
@@ -223,6 +221,18 @@ for cut_name, Selection in cuts.iteritems():
                                        )   
 		     pobj = process.DYGenMassFilter * pobj
 
+
+	
+    if 'VBTF' not in cut_name and cut_name != 'Simple':
+        if not miniAOD:
+		pobj = process.goodDataFilter * pobj
+	else:
+		process.load('SUSYBSMAnalysis.Zprime2muAnalysis.goodData_cff')
+		for dataFilter in goodDataFiltersMiniAOD:
+			#setattr(process,dataFilter 
+			pobj = dataFilter * pobj
+
+
     if 'MuPrescaled' in cut_name: ####### Now it seams that there are no prescaled path ########
         if miniAOD:
 		pobj = process.PrescaleToCommonMiniAOD * pobj ####### Now it seams that there are no prescaled path ########
@@ -236,16 +246,15 @@ def ntuplify(process, fill_gen_info=True):
 
 
     if miniAOD:
-
 	process.load('SUSYBSMAnalysis.Zprime2muAnalysis.PrunedMCLeptons_cfi')
     	obj = process.prunedMCLeptons
-        obj.src = cms.InputTag('prunedGenParticles')
+	obj.src = cms.InputTag('prunedGenParticles')
 
 	process.SimpleNtupler = cms.EDAnalyzer('SimpleNtupler_miniAOD',
                                            dimu_src = cms.InputTag('SimpleMuonsAllSigns'),
                                            beamspot_src = cms.InputTag('offlineBeamSpot'),
                                            vertices_src = cms.InputTag('offlineSlimmedPrimaryVertices'),
-					   TriggerResults_src = cms.InputTag('TriggerResults'),
+					   TriggerResults_src = cms.InputTag('TriggerResults', '', 'PAT'),
                                            genEventInfo = cms.untracked.InputTag('generator')
                                            )
  
@@ -265,7 +274,7 @@ def ntuplify(process, fill_gen_info=True):
         
     if hasattr(process, 'pathSimple'):
 	if miniAOD and fill_gen_info:
-		process.pathSimple *=obj * process.SimpleNtupler * process.SimpleNtuplerEmu
+        	process.pathSimple *=obj * process.SimpleNtupler * process.SimpleNtuplerEmu
 	else:
 		process.pathSimple *= process.SimpleNtupler * process.SimpleNtuplerEmu
 ntuplify(process) #to have ntuples also running in interactive way
@@ -304,7 +313,10 @@ def check_prescale(process, trigger_paths, hlt_process_name='HLT'):
     process.pCheckPrescale = cms.Path(process.CheckPrescale)
 
 def for_data(process):
-    process.GlobalTag.globaltag ='80X_dataRun2_Prompt_v11'
+    #process.GlobalTag.globaltag ='GR_P_V56'
+    process.GlobalTag.globaltag ='76X_dataRun2_v15'
+    #process.GlobalTag.globaltag = 'GR_E_V47'
+    # process.GlobalTag.globaltag = 'GR_P_V54'
     ntuplify(process)
     #check_prescale(process, trigger_paths) ####### Now it seams that there are no prescaled path ########
 
@@ -358,18 +370,14 @@ f.close()
 
 if __name__ == '__main__' and 'submit' in sys.argv:
     crab_cfg = '''
-
 from CRABClient.UserUtilities import config
 config = config()
-
-config.General.requestName = 'ana_datamc_%(name)s_miniAOD'
+config.General.requestName = 'ana_datamc_%(name)s'
 config.General.workArea = 'crab'
 #config.General.transferLogs = True
-
 config.JobType.pluginName = 'Analysis'
 config.JobType.psetName = 'histos_crab.py'   
 #config.JobType.priority = 1
-
 config.Data.inputDataset =  '%(ana_dataset)s'
 config.Data.inputDBS = 'global'
 job_control
@@ -377,10 +385,8 @@ config.Data.publication = False
 config.Data.outputDatasetTag = 'ana_datamc_%(name)s'
 config.Data.outLFNDirBase = '/store/user/alfloren'
 config.Data.ignoreLocality = True 
-
-#config.Site.whitelist = ["T2_CH_CERN"]
+config.Site.whitelist = ["T2_CH_CERN"]
 config.Site.storageSite = 'T2_CH_CERN'
-
 '''
     
     just_testing = 'testing' in sys.argv
@@ -390,7 +396,7 @@ config.Site.storageSite = 'T2_CH_CERN'
         from SUSYBSMAnalysis.Zprime2muAnalysis.goodlumis import *
 
         dataset_details = [
-                 ('SingleMuonRun2016G-prompt_278819_280385', '/SingleMuon/Run2016G-PromptReco-v1/MINIAOD'),
+            ('SingleMuonRun2016G-prompt_278819_280385', '/SingleMuon/Run2016G-PromptReco-v1/MINIAOD'),
 
             ]
 
@@ -456,8 +462,7 @@ config.Data.totalUnits = -1
 config.Data.unitsPerJob  = 10000
     ''')
 
-        
-        	
+       
         for name, ana_dataset in samples:
             print name
 
@@ -477,5 +482,5 @@ config.Data.unitsPerJob  = 10000
                 os.system(cmd)
 
         if not just_testing:
-            os.system('rm crabConfig.py histos_crab.py histos_crab.pyc')
+		os.system('rm crabConfig.py histos_crab.py histos_crab.pyc')
 
